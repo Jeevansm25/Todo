@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:gen": "npx prisma generate",
@@ -12,7 +12,7 @@
     "studio": "dotenvx run --env-file=.env.local -- prisma studio"
   },
   "dependencies": {
-    "autoprefixer": "^10.4.0",
+ 
     "@dotenvx/dotenvx": "^0.29.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.3.4",
