@@ -1,6 +1,7 @@
 import type { Viewport, Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '~/components/ui/sonner';
+import { Navigation } from '~/components/navigation';
 
 import { cn } from '~/lib/utils';
 
@@ -30,9 +31,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang='en'>
       <head />
       <body className={cn('min-h-screen', `${inter.className} , `)}>
+        <Navigation />
         {children}
         <Toaster richColors closeButton />
-        
       </body>
     </html>
   );

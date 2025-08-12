@@ -18,9 +18,20 @@ import {
   ArrowLeft,
   CheckCircle,
   Share2,
-  ClipboardList, ClipboardCheck,
+  ClipboardList, 
+  ClipboardCheck,
   Clock,
-  Inbox
+  Inbox,
+  Mail,
+  Check,
+  Zap,
+  Presentation,
+  Users,
+  Briefcase,
+  Code,
+  Rocket,
+  Award,
+  Send
 } from 'lucide-react';
 
 export const Icons = {
@@ -47,5 +58,14 @@ export const Icons = {
   clipboardCheck: ClipboardCheck,
   clock: Clock,
   inbox: Inbox,
-
+  mail: Mail,
+  check: Check,
+  zap: Zap,
+  presentation: Presentation,
+  users: Users,
+  briefcase: Briefcase,
+  code: Code,
+  rocket: Rocket,
+  award: Award,
+  send: Send
 };

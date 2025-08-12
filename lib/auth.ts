@@ -6,10 +6,10 @@ import { db } from '~/lib/db';
 
 import { PAGES } from '~/lib/constants';
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
-    maxAge: +process.env.NEXTAUTH_SECRET_EXPIRES_IN!
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: PAGES.SIGN_IN
@@ -25,27 +25,37 @@ export const authOptions = {
       async authorize(credentials, req) {
         if (!credentials) return null;
 
-        const user = await db.user.findUnique({
-          where: {
-            username: credentials.username
-          }
-        });
+        try {
+          const user = await db.user.findUnique({
+            where: {
+              username: credentials.username
+            }
+          });
 
-        if (user) {
+          if (!user) {
+            console.log('User not found:', credentials.username);
+            return null;
+          }
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
           if (isPasswordValid) {
+            console.log('User authenticated successfully:', user.username);
             return {
               id: user.id,
               username: user.username
             };
+          } else {
+            console.log('Invalid password for user:', credentials.username);
+            return null;
           }
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
         }
-
-        throw new Error('Wrong username or password');
       }
     })
   ],
@@ -55,16 +65,15 @@ export const authOptions = {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
       }
-
-      return session; // so user will be able to retrieve id and username from session
+      return session;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.username = user.username;
       }
-
-      return token; // this will be passed to the session callback
+      return token;
     }
-  }
+  },
+  debug: process.env.NODE_ENV === 'development',
 } satisfies NextAuthOptions;

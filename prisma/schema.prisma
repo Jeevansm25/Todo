@@ -1,67 +1,66 @@
-datasource db {
-    provider  = "postgresql"
-    url       = env("DATABASE_URL")
-    
+generator client {
+  provider = "prisma-client-js"
 }
 
-generator client {
-    provider = "prisma-client-js"
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-    id       String @id @default(cuid())
-    username String @unique
-    password String
+  id       String    @id @default(cuid())
+  username String    @unique
+  password String
+  email    String?   // Add email field for reminders
+  comments Comment[]
+  tasks    Task[]
 
-    tasks    Task[]
-    comments Comment[]
-
-    @@map("users")
+  @@map("users")
 }
 
 model Task {
-    id          String    @id @default(cuid())
-    done        Boolean   @default(false)
-    title       String
-    description String?   @db.Text
-    due         DateTime?
-    createdAt   DateTime  @default(now())
-    authorId    String
+  id          String    @id @default(cuid())
+  done        Boolean   @default(false)
+  title       String
+  description String?
+  due         DateTime?
+  createdAt   DateTime  @default(now())
+  authorId    String
+  
+  // Reminder fields
+  reminderSent    Boolean   @default(false)
+  reminderSentAt  DateTime?
+  
+  author      User      @relation(fields: [authorId], references: [id])
+  comments    Comment[]
+  gh          Repo?
 
-    author   User      @relation(fields: [authorId], references: [id])
-    comments Comment[]
-
-    gh Repo?
-
-    @@index([authorId])
-    @@map("tasks")
+  @@index([authorId])
+  @@index([due]) // Index for efficient due date queries
+  @@map("tasks")
 }
 
 model Repo {
-    id       Int    @id @default(autoincrement())
-    owner    String
-    repoName String @map("repo_name")
-    fullName String @map("full_name")
+  id       Int    @id @default(autoincrement())
+  owner    String
+  repoName String @map("repo_name")
+  fullName String @map("full_name")
+  taskId   String @unique
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-    taskId String @unique
-
-    task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-    @@map("gh_links")
+  @@map("gh_links")
 }
 
 model Comment {
-    id        String   @id @default(cuid())
-    text      String
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  senderId  String
+  taskId    String
+  sender    User     @relation(fields: [senderId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-    senderId String
-    sender   User   @relation(fields: [senderId], references: [id])
-
-    taskId String
-    task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-    @@index([taskId])
-    @@index([senderId])
-    @@map("comments")
+  @@index([taskId])
+  @@index([senderId])
+  @@map("comments")
 }

@@ -1,40 +1,20 @@
 'use server';
 
-import { getSession } from 'next-auth/react';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { db } from '~/lib/db';
-import { sendMail } from '~/lib/mail';
 import { action } from '~/lib/safe-action';
 
 const SESSION_EXPIRED_MESSAGE =
   'Your session has expired. To use the app sign in again';
-
-// Utility to send action-specific emails
-const sendTaskMail = async ({
-  to,
-  subject,
-  body,
-}: {
-  to: string;
-  subject: string;
-  body: string;
-}) => {
-  await sendMail({
-    to,
-    name: 'Todo User', // Replace with a dynamic name if available
-    subject,
-    body,
-  });
-};
 
 const doneSchema = z.object({
   id: z.string(),
   done: z.boolean(),
 });
 
-export const toogle = action(doneSchema, async ({ id, done }, { userId }) => {
+export const toggle = action(doneSchema, async ({ id, done }, { userId }) => {
   try {
     if (!userId)
       return {
@@ -48,39 +28,20 @@ export const toogle = action(doneSchema, async ({ id, done }, { userId }) => {
       data: {
         done,
       },
-      include: {
-        author: true, // Fetch the author's email
-      },
     });
 
     revalidatePath('/[username]', 'page');
-
-    // Adjust email based on toggle state
-    const taskStatus = done ? 'done' : 'incomplete';
-    const subject = `Task Marked as ${taskStatus.toUpperCase()}`;
-    const body = `
-      <p>Your task <strong>${task.title}</strong> has been marked as <strong>${taskStatus}</strong>.</p>
-      <p>Thank you for staying on top of your tasks!</p>
-    `;
-
-    // Send an email notification
-    await sendTaskMail({
-      to: task.author.username,
-      subject,
-      body,
-    });
 
     return {
       done: task.done,
     };
   } catch (e) {
-    console.log(e);
+    console.error('Error toggling task:', e);
     return {
       failure: 'Error occurred while toggling the done state!',
     };
   }
 });
-
 
 const deleteTaskSchema = z.object({
   id: z.string(),
@@ -99,23 +60,13 @@ export const deleteTask = action(
         where: {
           id,
         },
-        include: {
-          author: true, // Fetch the author's email
-        },
       });
 
       revalidatePath('/[username]', 'page');
 
-      // Send a delete-specific email
-      await sendTaskMail({
-        to: task.author.username,
-        subject: 'Task Deleted',
-        body: `<p>Your task <strong>${task.title}</strong> has been deleted.</p>`,
-      });
-
       return task;
     } catch (e) {
-      console.log(e);
+      console.error('Error deleting task:', e);
       return {
         failure: 'Error occurred while deleting the task!',
       };
@@ -143,28 +94,13 @@ export const createComment = action(
           senderId: userId,
           text,
         },
-        include: {
-          task: {
-            include: {
-              author: true, // Fetch the author's email
-            },
-          },
-        },
       });
 
       revalidatePath('/[username]/[taskId]', 'page');
 
-      // Send a comment-specific email
-      await sendTaskMail({
-        to: comment.task.author.username,
-        subject: 'New Comment on Your Task',
-        body: `<p>A new comment was added to your task <strong>${comment.task.title}</strong>:</p>
-               <p>"${text}"</p>`,
-      });
-
       return comment;
     } catch (e) {
-      console.log(e);
+      console.error('Error creating comment:', e);
       return {
         failure: 'Error occurred while creating the comment!',
       };
@@ -213,23 +149,11 @@ export const linkRepo = action(
         },
       });
 
-      const task = await db.task.findUnique({
-        where: { id: taskId },
-        include: { author: true },
-      });
-
       revalidatePath('/[username]', 'page');
-
-      // Send a repo-link-specific email
-      await sendTaskMail({
-        to: task?.author.username || 'noreply@example.com',
-        subject: 'Repository Linked to Task',
-        body: `<p>The GitHub repository <strong>${fullName}</strong> has been linked to your task <strong>${task?.title}</strong>.</p>`,
-      });
 
       return repo;
     } catch (e) {
-      console.log(e);
+      console.error('Error linking repo:', e);
       return {
         failure: 'Error occurred while linking the repo!',
       };
